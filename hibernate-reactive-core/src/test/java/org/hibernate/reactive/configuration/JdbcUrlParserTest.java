@@ -10,16 +10,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hibernate.HibernateException;
+import org.hibernate.reactive.annotations.EnabledFor;
+import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 
 import org.junit.Assert;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import io.vertx.sqlclient.SqlConnectOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.hibernate.reactive.containers.DatabaseConfiguration.DBType.SQLSERVER;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.createJdbcUrl;
 import static org.hibernate.reactive.containers.DatabaseConfiguration.dbType;
 import static org.junit.Assert.assertThrows;
@@ -167,6 +171,93 @@ public class JdbcUrlParserTest {
 		} );
 	}
 
+	@Nested
+	@EnabledFor(value = SQLSERVER, reason = "SQL Server specific tests using Vertx MSSQL")
+    class VertxMSSQLUriTest {
+		// Vertx MSSql uses URI format: sqlserver://[user[:[password]]@]host[:port][/database][?attribute1=value1&attribute2=value2…​]
+
+		@Test
+		public void testVertxMssqlUriWithNoParameters()  {
+			String url = "sqlserver://myPersonalHost:1443/my_db";
+
+			String username = "hello";
+			String password = "password";
+
+			// No parameters being passed. We set username and password here so assertion can work.
+			Map<String, String> parameters = new HashMap<>();
+			parameters.put( "user", username );
+			parameters.put( "password", password );
+
+			URI uri = DefaultSqlClientPool.parse(url);
+			DefaultSqlClientPoolConfiguration poolConfiguration = new DefaultSqlClientPoolConfiguration();
+
+			// Username and password are set via configuration
+			poolConfiguration.configure(
+					Map.of(
+							"hibernate.connection.username", username,
+							"hibernate.connection.password", password
+					)
+			);
+
+			SqlConnectOptions options = poolConfiguration.connectOptions( uri );
+
+			assertOptions(url, "my_db", "myPersonalHost", 1443, parameters, options);
+		}
+
+		@Test
+		public void testVertxMssqlUriWithParameters()  {
+			String url = "sqlserver://myPersonalHost:1443/my_db;user=hello";
+
+			String username = "hello";
+			String password = "password";
+
+			Map<String, String> parameters = new HashMap<>();
+			parameters.put( "user", username );
+			parameters.put( "password", password );
+
+			URI uri = DefaultSqlClientPool.parse(url);
+			DefaultSqlClientPoolConfiguration poolConfiguration = new DefaultSqlClientPoolConfiguration();
+
+			// Username set as parameter and password passed as configuration
+			poolConfiguration.configure(
+					Map.of(
+							"hibernate.connection.password", password
+					)
+			);
+
+			SqlConnectOptions options = poolConfiguration.connectOptions( uri );
+
+			assertOptions(url, "my_db", "myPersonalHost", 1443, parameters, options);
+		}
+
+		@Test
+		public void testVertxMssqlUriWithDatabaseAsParameter()  {
+			String url = "sqlserver://myPersonalHost:1443;user=hello;database=my_db";
+
+			String username = "hello";
+			String password = "password";
+
+			Map<String, String> parameters = new HashMap<>();
+			parameters.put( "user", username );
+			parameters.put( "password", password );
+
+			URI uri = DefaultSqlClientPool.parse(url);
+			DefaultSqlClientPoolConfiguration poolConfiguration = new DefaultSqlClientPoolConfiguration();
+
+			// Username set as parameter and password passed as configuration
+			poolConfiguration.configure(
+					Map.of(
+							"hibernate.connection.password", password
+					)
+			);
+
+			SqlConnectOptions options = poolConfiguration.connectOptions( uri );
+
+			assertOptions(url, "my_db", "myPersonalHost", 1443, parameters, options);
+		}
+
+	}
+
 
 	private void assertOptions(String url, String expectedDbName, Map<String, String> parameters) {
 		assertOptions( url, expectedDbName, "localhost", parameters );
@@ -180,19 +271,23 @@ public class JdbcUrlParserTest {
 		URI uri = DefaultSqlClientPool.parse( url );
 		SqlConnectOptions options = new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 
+		assertOptions(url, expectedDbName, expectedHost, expectedPort, parameters, options);
+	}
+
+	private static void assertOptions(String url, String expectedDbName, String expectedHost, int expectedPort, Map<String, String> parameters, SqlConnectOptions options) {
 		// These keys won't be mapped as properties
 		String username = parameters.remove( "user" );
 		String password = parameters.remove( "password" );
 		parameters.remove( "database" );
 
-		assertThat( options ).as( "URL: " + url ).isNotNull();
-		assertThat( options.getUser() ).as( "URL: " + url ).isEqualTo( username );
-		assertThat( options.getPassword() ).as( "URL: " + url ).isEqualTo( password );
-		assertThat( options.getDatabase() ).as( "URL: " + url ).isEqualTo( expectedDbName );
-		assertThat( options.getHost() ).as( "URL: " + url ).isEqualTo( expectedHost );
-		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( expectedPort );
+		assertThat(options).as( "URL: " + url).isNotNull();
+		assertThat( options.getUser() ).as( "URL: " + url).isEqualTo( username );
+		assertThat( options.getPassword() ).as( "URL: " + url).isEqualTo( password );
+		assertThat( options.getDatabase() ).as( "URL: " + url).isEqualTo(expectedDbName);
+		assertThat( options.getHost() ).as( "URL: " + url).isEqualTo(expectedHost);
+		assertThat( options.getPort() ).as( "URL: " + url).isEqualTo(expectedPort);
 
 		// Check extra properties
-		assertThat( options.getProperties() ).as( "URL: " + url ).containsExactlyInAnyOrderEntriesOf( parameters );
+		assertThat( options.getProperties() ).as( "URL: " + url).containsExactlyInAnyOrderEntriesOf(parameters);
 	}
 }

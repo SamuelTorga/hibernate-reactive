@@ -99,6 +99,12 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 				? path.substring( 1 )
 				: "";
 
+		if (scheme.equals( "sqlserver" ) && database.contains( ";" )) {
+			// Remove possible parameter from database name of a MSSQL URI
+			// Example: jdbc:sqlserver://<server>:<port>/<database>;<user>=
+			database = database.substring(0, database.indexOf( ';' ));
+		}
+
 		if ( scheme.equals( "db2" ) && database.indexOf( ':' ) > 0 ) {
 			// DB2 URLs are a bit odd and have the format:
 			// jdbc:db2://<HOST>:<PORT>/<DB>:key1=value1;key2=value2;
@@ -301,7 +307,21 @@ public class DefaultSqlClientPoolConfiguration implements SqlClientPoolConfigura
 		String s = uri.toString();
 		String remainder = s.substring( s.indexOf( "://" ) + 3 );
 		char endOfHostPortChar = ';';
-		String hostPortString = remainder.substring( 0, remainder.indexOf( endOfHostPortChar ) );
+		int indexOfEndOfHostPortChar = remainder.indexOf(endOfHostPortChar);
+		if (indexOfEndOfHostPortChar == -1) {
+			// No parameters being passed
+			// Check if database is present as path parameter
+			indexOfEndOfHostPortChar = remainder.indexOf( '/' );
+			if (indexOfEndOfHostPortChar == -1) {
+				// URI does not contain any parameters. We can set to end of string.
+				indexOfEndOfHostPortChar = remainder.length() -1;
+			}
+		}
+		String hostPortString = remainder.substring( 0, indexOfEndOfHostPortChar);
+		if (hostPortString.contains("/")) {
+			// URI contains database as path parameter
+			hostPortString = hostPortString.substring(0, hostPortString.indexOf("/"));
+		}
 		int startOfPort = hostPortString.indexOf( ':' );
 		if ( startOfPort == -1 ) {
 			return -1;

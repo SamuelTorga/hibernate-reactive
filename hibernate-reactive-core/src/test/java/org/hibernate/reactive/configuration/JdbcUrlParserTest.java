@@ -11,7 +11,6 @@ import java.util.Map;
 
 import org.hibernate.HibernateException;
 import org.hibernate.reactive.annotations.EnabledFor;
-import org.hibernate.reactive.containers.DatabaseConfiguration;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPool;
 import org.hibernate.reactive.pool.impl.DefaultSqlClientPoolConfiguration;
 
@@ -201,7 +200,7 @@ public class JdbcUrlParserTest {
 
 			SqlConnectOptions options = poolConfiguration.connectOptions( uri );
 
-			assertOptions(url, "my_db", "myPersonalHost", 1443, parameters, options);
+			assertOptions( url, "my_db", "myPersonalHost", 1443, parameters, options );
 		}
 
 		@Test
@@ -227,7 +226,7 @@ public class JdbcUrlParserTest {
 
 			SqlConnectOptions options = poolConfiguration.connectOptions( uri );
 
-			assertOptions(url, "my_db", "myPersonalHost", 1443, parameters, options);
+			assertOptions( url, "my_db", "myPersonalHost", 1443, parameters, options );
 		}
 
 		@Test
@@ -253,7 +252,7 @@ public class JdbcUrlParserTest {
 
 			SqlConnectOptions options = poolConfiguration.connectOptions( uri );
 
-			assertOptions(url, "my_db", "myPersonalHost", 1443, parameters, options);
+			assertOptions( url, "my_db", "myPersonalHost", 1443, parameters, options );
 		}
 
 	}
@@ -271,7 +270,7 @@ public class JdbcUrlParserTest {
 		URI uri = DefaultSqlClientPool.parse( url );
 		SqlConnectOptions options = new DefaultSqlClientPoolConfiguration().connectOptions( uri );
 
-		assertOptions(url, expectedDbName, expectedHost, expectedPort, parameters, options);
+		assertOptions( url, expectedDbName, expectedHost, expectedPort, parameters, options );
 	}
 
 	private static void assertOptions(String url, String expectedDbName, String expectedHost, int expectedPort, Map<String, String> parameters, SqlConnectOptions options) {
@@ -280,14 +279,14 @@ public class JdbcUrlParserTest {
 		String password = parameters.remove( "password" );
 		parameters.remove( "database" );
 
-		assertThat(options).as( "URL: " + url).isNotNull();
-		assertThat( options.getUser() ).as( "URL: " + url).isEqualTo( username );
-		assertThat( options.getPassword() ).as( "URL: " + url).isEqualTo( password );
-		assertThat( options.getDatabase() ).as( "URL: " + url).isEqualTo(expectedDbName);
-		assertThat( options.getHost() ).as( "URL: " + url).isEqualTo(expectedHost);
-		assertThat( options.getPort() ).as( "URL: " + url).isEqualTo(expectedPort);
+		assertThat( options ).as( "URL: " + url ).isNotNull();
+		assertThat( options.getUser() ).as( "URL: " + url ).isEqualTo( username );
+		assertThat( options.getPassword() ).as( "URL: " + url ).isEqualTo( password );
+		assertThat( options.getDatabase() ).as( "URL: " + url ).isEqualTo( expectedDbName );
+		assertThat( options.getHost() ).as( "URL: " + url ).isEqualTo( expectedHost );
+		assertThat( options.getPort() ).as( "URL: " + url ).isEqualTo( expectedPort );
 
 		// Check extra properties
-		assertThat( options.getProperties() ).as( "URL: " + url).containsExactlyInAnyOrderEntriesOf(parameters);
+		assertThat( options.getProperties() ).as( "URL: " + url ).containsExactlyInAnyOrderEntriesOf( parameters );
 	}
 }

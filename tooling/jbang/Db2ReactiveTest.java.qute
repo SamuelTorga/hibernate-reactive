@@ -5,12 +5,12 @@
  * Copyright: Red Hat Inc. and Hibernate Authors
  */
 
-//DEPS io.vertx:vertx-db2-client:$\{vertx.version:4.5.10}
-//DEPS io.vertx:vertx-unit:$\{vertx.version:4.5.10}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:2.4.0.Final}
-//DEPS org.assertj:assertj-core:3.24.2
+//DEPS io.vertx:vertx-db2-client:$\{vertx.version:4.5.11}
+//DEPS io.vertx:vertx-unit:$\{vertx.version:4.5.11}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:$\{hibernate-reactive.version:3.0.0.Beta1}
+//DEPS org.assertj:assertj-core:3.26.3
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:db2:1.19.8
+//DEPS org.testcontainers:db2:1.20.4
 //DEPS org.slf4j:slf4j-simple:2.0.7
 
 import jakarta.persistence.Entity;
@@ -65,7 +65,7 @@ public class {baseName} {
 	}
 
     @ClassRule
-    public final static Db2Container database = new Db2Container( imageName( "docker.io", "icr.io/db2_community/db2", "11.5.9.0" ) )
+    public final static Db2Container database = new Db2Container( imageName( "docker.io", "icr.io/db2_community/db2", "12.1.0.0" ) )
             .acceptLicense();
 
 	private Mutiny.SessionFactory sessionFactory;

@@ -5,25 +5,25 @@
  */
 
 ///usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.vertx:vertx-pg-client:${vertx.version:4.5.10}
+//DEPS io.vertx:vertx-pg-client:${vertx.version:4.5.11}
 //DEPS com.ongres.scram:client:2.1
-//DEPS io.vertx:vertx-db2-client:${vertx.version:4.5.10}
-//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.10}
-//DEPS io.vertx:vertx-unit:${vertx.version:4.5.10}
-//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:2.4.0.Final}
-//DEPS org.assertj:assertj-core:3.24.2
+//DEPS io.vertx:vertx-db2-client:${vertx.version:4.5.11}
+//DEPS io.vertx:vertx-mysql-client:${vertx.version:4.5.11}
+//DEPS io.vertx:vertx-unit:${vertx.version:4.5.11}
+//DEPS org.hibernate.reactive:hibernate-reactive-core:${hibernate-reactive.version:3.0.0.Beta1}
+//DEPS org.assertj:assertj-core:3.26.3
 //DEPS junit:junit:4.13.2
-//DEPS org.testcontainers:postgresql:1.19.8
-//DEPS org.testcontainers:mysql:1.19.8
-//DEPS org.testcontainers:db2:1.19.8
-//DEPS org.testcontainers:mariadb:1.19.8
-//DEPS org.testcontainers:cockroachdb:1.19.8
+//DEPS org.testcontainers:postgresql:1.20.4
+//DEPS org.testcontainers:mysql:1.20.4
+//DEPS org.testcontainers:db2:1.20.4
+//DEPS org.testcontainers:mariadb:1.20.4
+//DEPS org.testcontainers:cockroachdb:1.20.4
 //
 //// Testcontainer needs the JDBC drivers to start the containers
 //// Hibernate Reactive doesn't use them
-//DEPS org.postgresql:postgresql:42.6.0
-//DEPS com.mysql:mysql-connector-j:8.0.33
-//DEPS org.mariadb.jdbc:mariadb-java-client:3.1.4
+//DEPS org.postgresql:postgresql:42.7.4
+//DEPS com.mysql:mysql-connector-j:9.1.0
+//DEPS org.mariadb.jdbc:mariadb-java-client:3.5.1
 //
 
 import java.util.function.Supplier;
@@ -230,7 +230,7 @@ public class ReactiveTest {
 	enum Database {
 		POSTGRESQL( () -> new PostgreSQLContainer( "postgres:16.3" ) ),
 		MYSQL( () -> new MySQLContainer( "mysql:8.4.0" ) ),
-		DB2( () -> new Db2Container( "docker.io/icr.io/db2_community/db2:11.5.9.0" ).acceptLicense() ),
+		DB2( () -> new Db2Container( "docker.io/icr.io/db2_community/db2:12.1.0.0" ).acceptLicense() ),
 		MARIADB( () -> new MariaDBContainer( "mariadb:11.4.2" ) ),
 		COCKROACHDB( () -> new CockroachContainer( "cockroachdb/cockroach:v24.1.0" ) );
 

@@ -1,7 +1,7 @@
 /*
  * See https://github.com/hibernate/hibernate-jenkins-pipeline-helpers
  */
-@Library('hibernate-jenkins-pipeline-helpers@1.13') _
+@Library('hibernate-jenkins-pipeline-helpers') _
 
 // Avoid running the pipeline on branch indexing
 if (currentBuild.getBuildCauses().toString().contains('BranchIndexingCause')) {
@@ -15,7 +15,7 @@ pipeline {
         label 'Fedora'
     }
     tools {
-        jdk 'OpenJDK 11 Latest'
+        jdk 'OpenJDK 17 Latest'
     }
     options {
   		rateLimitBuilds(throttle: [count: 1, durationName: 'hour', userBoost: true])
@@ -31,15 +31,12 @@ pipeline {
 		stage('Publish') {
 			steps {
 				withCredentials([
-					usernamePassword(credentialsId: 'ossrh.sonatype.org', usernameVariable: 'hibernatePublishUsername', passwordVariable: 'hibernatePublishPassword'),
-					string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_PASS'),
-					file(credentialsId: 'release.gpg.private-key', variable: 'SIGNING_KEYRING')
+					// https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-ossrh
+					usernamePassword(credentialsId: 'ossrh.sonatype.org', usernameVariable: 'ORG_GRADLE_PROJECT_sonatypeUsername', passwordVariable: 'ORG_GRADLE_PROJECT_sonatypePassword'),
+					file(credentialsId: 'release.gpg.private-key', variable: 'SIGNING_GPG_PRIVATE_KEY_PATH'),
+					string(credentialsId: 'release.gpg.passphrase', variable: 'SIGNING_GPG_PASSPHRASE')
 				]) {
-					sh '''./gradlew clean publish \
-						-PhibernatePublishUsername=$hibernatePublishUsername \
-						-PhibernatePublishPassword=$hibernatePublishPassword \
-						--no-scan \
-					'''
+					sh "./gradlew clean publish --no-scan"
 				}
 			}
         }

@@ -696,6 +696,22 @@ public interface Stage {
 		CompletionStage<Void> persist(Object entity);
 
 		/**
+		 * Make a transient instance persistent and mark it for later insertion in the
+		 * database. This operation cascades to associated instances if the association
+		 * is mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
+		 * <p>
+		 * For entities with a {@link jakarta.persistence.GeneratedValue generated id},
+		 * {@code persist()} ultimately results in generation of an identifier for the
+		 * given instance. But this may happen asynchronously, when the session is
+		 * {@linkplain #flush() flushed}, depending on the identifier generation strategy.
+		 *
+		 * @param entityName the entity name
+		 * @param object a transient instance to be made persistent
+		 * @see #persist(Object)
+		 */
+		CompletionStage<Void> persist(String entityName, Object object);
+
+		/**
 		 * Persist multiple transient entity instances at once.
 		 *
 		 * @see #persist(Object)
@@ -1760,6 +1776,16 @@ public interface Stage {
 		CompletionStage<Void> insert(int batchSize, Object... entities);
 
 		/**
+		 * Insert multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		CompletionStage<Void> insertMultiple(List<?> entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1786,6 +1812,16 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		CompletionStage<Void> delete(int batchSize, Object... entities);
+
+		/**
+		 * Delete multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		CompletionStage<Void> deleteMultiple(List<?> entities);
 
 		/**
 		 * Update a row.
@@ -1816,6 +1852,16 @@ public interface Stage {
 		CompletionStage<Void> update(int batchSize, Object... entities);
 
 		/**
+		 * Update multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities a detached entity instance
+		 *
+		 * @see org.hibernate.StatelessSession#update(Object)
+		 */
+		CompletionStage<Void> updateMultiple(List<?> entities);
+
+		/**
 		 * Refresh the entity instance state from the database.
 		 *
 		 * @param entity The entity to be refreshed.
@@ -1842,6 +1888,16 @@ public interface Stage {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		CompletionStage<Void> refresh(int batchSize, Object... entities);
+
+		/**
+		 * Refresh the entity instance state from the database,
+		 * using the size of the given list as the batch size.
+		 *
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		CompletionStage<Void> refreshMultiple(List<?> entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1899,6 +1955,17 @@ public interface Stage {
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> CompletionStage<T> fetch(T association);
+
+		/**
+		 * Return the identifier value of the given entity, which may be detached.
+		 *
+		 * @param entity a persistent instance associated with this session
+		 *
+		 * @return the identifier
+		 *
+		 * @since 3.0
+		 */
+		Object getIdentifier(Object entity);
 
 		/**
 		 * Obtain a native SQL result set mapping defined via the annotation

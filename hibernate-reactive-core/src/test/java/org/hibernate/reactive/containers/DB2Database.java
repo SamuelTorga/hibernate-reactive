@@ -73,11 +73,11 @@ class DB2Database implements TestableDatabase {
 		expectedDBTypeForClass.put( Character.class, "CHARACTER" );
 		expectedDBTypeForClass.put( char.class, "CHARACTER" );
 		expectedDBTypeForClass.put( String.class, "VARCHAR" );
-		expectedDBTypeForClass.put( String[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( Long[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( BigDecimal[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( BigInteger[].class, "VARBINARY" );
-		expectedDBTypeForClass.put( Boolean[].class, "VARBINARY" );
+		expectedDBTypeForClass.put( String[].class, "XML" );
+		expectedDBTypeForClass.put( Long[].class, "XML" );
+		expectedDBTypeForClass.put( BigDecimal[].class, "XML" );
+		expectedDBTypeForClass.put( BigInteger[].class, "XML" );
+		expectedDBTypeForClass.put( Boolean[].class, "XML" );
 	}}
 
 	/**
@@ -87,7 +87,7 @@ class DB2Database implements TestableDatabase {
 	 * TIP: To reuse the same containers across multiple runs, set `testcontainers.reuse.enable=true` in a file located
 	 * at `$HOME/.testcontainers.properties` (create the file if it does not exist).
 	 */
-	static final Db2Container db2 = new Db2Container( imageName( "icr.io", "db2_community/db2", "11.5.9.0" ) )
+	static final Db2Container db2 = new Db2Container( imageName( "icr.io", "db2_community/db2", "12.1.0.0" ) )
 			.withUsername( DatabaseConfiguration.USERNAME )
 			.withPassword( DatabaseConfiguration.PASSWORD )
 			.withDatabaseName( DatabaseConfiguration.DB_NAME )

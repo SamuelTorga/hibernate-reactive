@@ -5,12 +5,17 @@ on:
     branches:
       - 'main'
       - 'wip/**'
+      - '2.*'
+      - '3.*'
     tags:
       - '2.*'
+      - '3.*'
   pull_request:
     branches:
       - 'main'
       - 'wip/**'
+      - '2.*'
+      - '3.*'
   # For building snapshots
   workflow_call:
     inputs:
@@ -85,7 +90,7 @@ jobs:
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Gradle downloads
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-gradle
         with:
           path: |
@@ -95,10 +100,17 @@ jobs:
           # refresh cache every month to avoid unlimited growth
           key: gradle-examples-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
       - name: Set up JDK 11
+        if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'temurin'
           java-version: 11
+      - name: Set up JDK 17
+        if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: 17
       - name: Print the effective ORM version used
         run: ./gradlew :${{ matrix.example }}:dependencyInsight --dependency org.hibernate.orm:hibernate-core
       - name: Run examples in '${{ matrix.example }}' on ${{ matrix.db }}
@@ -127,7 +139,7 @@ jobs:
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
       - name: Cache Gradle downloads
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-gradle
         with:
           path: |
@@ -137,10 +149,18 @@ jobs:
           # refresh cache every month to avoid unlimited growth
           key: gradle-db-${{ matrix.db }}-${{ steps.get-date.outputs.yearmonth }}
       - name: Set up JDK 11
+        if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'temurin'
           java-version: 11
+      - name: Set up JDK 17
+        if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
+        uses: actions/setup-java@v2.2.0
+
+        with:
+          distribution: 'temurin'
+          java-version: 17
       - name: Print the effective ORM version used
         run: ./gradlew :hibernate-reactive-core:dependencyInsight --dependency org.hibernate.orm:hibernate-core
       - name: Build and Test with ${{ matrix.db }}
@@ -165,7 +185,6 @@ jobs:
         # To see the available versions and download links on jdk.java.net:
         # https://github.com/oracle-actions/setup-java/blob/main/jdk.java.net-uri.properties
         java:
-          - { name: "11", java_version_numeric: 11 }
           - { name: "17", java_version_numeric: 17 }
           # We want to enable preview features when testing newer builds of OpenJDK:
           # even if we don't use these features, just enabling them can cause side effects
@@ -174,6 +193,7 @@ jobs:
           - { name: "21", java_version_numeric: 21, jvm_args: '--enable-preview' }
           - { name: "23", java_version_numeric: 23, from: 'jdk.java.net', jvm_args: '--enable-preview' }
           - { name: "24-ea", java_version_numeric: 24, from: 'jdk.java.net', jvm_args: '--enable-preview' }
+          - { name: "25-ea", java_version_numeric: 25, from: 'jdk.java.net', jvm_args: '--enable-preview' }
     steps:
       - name: Checkout ${{ inputs.branch }}
         uses: actions/checkout@v2
@@ -184,16 +204,50 @@ jobs:
         run: |
           echo "::set-output name=yearmonth::$(/bin/date -u "+%Y-%m")"
         shell: bash
-      - name: Cache Gradle downloads
-        uses: actions/cache@v2
-        id: cache-gradle
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          CURRENT_BRANCH="${{ github.repository != 'hibernate/hibernate-orm' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="buildtool-cache"
+          echo "buildtool-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "buildtool-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "buildtool-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
+      - name: Cache Maven/Gradle Dependency/Dist Caches
+        id: cache-maven
+        uses: actions/cache@v4
+        # if it's not a pull request, we restore and save the cache
+        if: github.event_name != 'pull_request'
         with:
           path: |
-            .gradle/caches
-            .gradle/jdks
-            .gradle/wrapper
-          # refresh cache every month to avoid unlimited growth
-          key: gradle-java${{ matrix.java }}-${{ steps.get-date.outputs.yearmonth }}
+            ~/.m2/repository/
+            ~/.m2/wrapper/
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper/
+          # A new cache will be stored daily. After that first store of the day, cache save actions will fail because the cache is immutable, but it's not a problem.
+          # The whole cache is dropped monthly to prevent unlimited growth.
+          # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
+          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
+      - name: Restore Maven/Gradle Dependency/Dist Caches
+        uses: actions/cache/restore@v4
+        # if it's a pull request, we restore the cache, but we don't save it
+        if: github.event_name == 'pull_request'
+        with:
+          path: |
+            ~/.m2/repository/
+            ~/.m2/wrapper/
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper/
+          key: ${{ steps.cache-key.outputs.buildtool-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.buildtool-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.buildtool-monthly-cache-key }}-
+
       - name: Set up latest JDK ${{ matrix.java.name }} from jdk.java.net
         if: matrix.java.from == 'jdk.java.net'
         uses: oracle-actions/setup-java@v1
@@ -210,12 +264,19 @@ jobs:
       - name: Export path to JDK ${{ matrix.java.name }}
         id: testjdk-exportpath
         run: echo "::set-output name=path::${JAVA_HOME}"
-      # Always use JDK 11 to build the main code: that's what we use for releases.
       - name: Set up JDK 11
+        if: ${{ startsWith( inputs.branch, 'wip/2' ) }}
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'temurin'
           java-version: 11
+          check-latest: true
+      - name: Set up JDK 17
+        if: ${{ !startsWith( inputs.branch, 'wip/2' ) }}
+        uses: actions/setup-java@v2.2.0
+        with:
+          distribution: 'temurin'
+          java-version: 17
           check-latest: true
       - name: Export path to JDK 11
         id: mainjdk-exportpath

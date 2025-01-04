@@ -677,11 +677,27 @@ public interface Mutiny {
 		 * {@code session.persist(newBook).map(v -> session.flush());}
 		 * </pre>
 		 *
-		 * @param entity a transient instance of a persistent class
+		 * @param object a transient instance of a persistent class
 		 *
 		 * @see jakarta.persistence.EntityManager#persist(Object)
 		 */
-		Uni<Void> persist(Object entity);
+		Uni<Void> persist(Object object);
+
+		/**
+		 * Make a transient instance persistent and mark it for later insertion in the
+		 * database. This operation cascades to associated instances if the association
+		 * is mapped with {@link jakarta.persistence.CascadeType#PERSIST}.
+		 * <p>
+		 * For entities with a {@link jakarta.persistence.GeneratedValue generated id},
+		 * {@code persist()} ultimately results in generation of an identifier for the
+		 * given instance. But this may happen asynchronously, when the session is
+		 * {@linkplain #flush() flushed}, depending on the identifier generation strategy.
+		 *
+		 * @param entityName the entity name
+		 * @param object a transient instance to be made persistent
+		 * @see #persist(Object)
+		 */
+		Uni<Void> persist(String entityName, Object object);
 
 		/**
 		 * Persist multiple transient entity instances at once.
@@ -1715,6 +1731,16 @@ public interface Mutiny {
 		Uni<Void> insertAll(int batchSize, Object... entities);
 
 		/**
+		 * Insert multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities new transient instances
+		 *
+		 * @see org.hibernate.StatelessSession#insert(Object)
+		 */
+		Uni<Void> insertMultiple(List<?> entities);
+
+		/**
 		 * Delete a row.
 		 *
 		 * @param entity a detached entity instance
@@ -1741,6 +1767,16 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#delete(Object)
 		 */
 		Uni<Void> deleteAll(int batchSize, Object... entities);
+
+		/**
+		 * Delete multiple rows, using the size of the
+		 * given list as the batch size.
+		 *
+		 * @param entities detached entity instances
+		 *
+		 * @see org.hibernate.StatelessSession#delete(Object)
+		 */
+		Uni<Void> deleteMultiple(List<?> entities);
 
 		/**
 		 * Update a row.
@@ -1771,13 +1807,14 @@ public interface Mutiny {
 		Uni<Void> updateAll(int batchSize, Object... entities);
 
 		/**
-		 * Refresh the entity instance state from the database.
+		 * Update multiple rows, using the size of the
+		 * given list as the batch size.
 		 *
-		 * @param entity The entity to be refreshed.
+		 * @param entities detached entity instances
 		 *
-		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 * @see org.hibernate.StatelessSession#update(Object)
 		 */
-		Uni<Void> refresh(Object entity);
+		Uni<Void> updateMultiple(List<?> entities);
 
 		/**
 		 * Use a SQL {@code merge into} statement to perform an upsert.
@@ -1804,6 +1841,15 @@ public interface Mutiny {
 		/**
 		 * Refresh the entity instance state from the database.
 		 *
+		 * @param entity The entity to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<Void> refresh(Object entity);
+
+		/**
+		 * Refresh the entity instance state from the database.
+		 *
 		 * @param entities The entities to be refreshed.
 		 *
 		 * @see org.hibernate.StatelessSession#refresh(Object)
@@ -1820,6 +1866,16 @@ public interface Mutiny {
 		 * @see org.hibernate.StatelessSession#refresh(Object)
 		 */
 		Uni<Void> refreshAll(int batchSize, Object... entities);
+
+		/**
+		 * Refresh the entity instance state from the database
+		 * using the size of the given list as the batch size.
+		 *
+		 * @param entities The entities to be refreshed.
+		 *
+		 * @see org.hibernate.StatelessSession#refresh(Object)
+		 */
+		Uni<Void> refreshMultiple(List<?> entities);
 
 		/**
 		 * Refresh the entity instance state from the database.
@@ -1860,6 +1916,17 @@ public interface Mutiny {
 		 * @see org.hibernate.Hibernate#initialize(Object)
 		 */
 		<T> Uni<T> fetch(T association);
+
+		/**
+		 * Return the identifier value of the given entity, which may be detached.
+		 *
+		 * @param entity a persistent instance associated with this session
+		 *
+		 * @return the identifier
+		 *
+		 * @since 3.0
+		 */
+		Object getIdentifier(Object entity);
 
 		/**
 		 * Obtain a native SQL result set mapping defined via the annotation
